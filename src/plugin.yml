@@ -1,0 +1,4 @@
+name: Meteor
+main: fr.rsquatre.meteor.Meteor
+version: 0.0.1-alpha
+api-version: 1.19
