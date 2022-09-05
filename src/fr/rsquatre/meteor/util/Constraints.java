@@ -4,6 +4,7 @@
 package fr.rsquatre.meteor.util;
 
 import java.lang.reflect.Array;
+import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
@@ -22,14 +23,18 @@ public final class Constraints {
 
 	private boolean valid;
 	private Object object;
+	private CompatibilityMode cMode = CompatibilityMode.FAIL;
+	private NullMode nMode = NullMode.FAIL;
 
-	public Constraints(Object object) {
+	public Constraints(@Nullable Object object) {
 
 		this.object = object;
 	}
 
 	/**
 	 * Asserts that the object is not null
+	 *
+	 * @return this
 	 */
 	public Constraints notNull() {
 
@@ -51,6 +56,8 @@ public final class Constraints {
 	 * a length greater than 0 if it is an array<br>
 	 * See {@link #notBlank()} to assert a String is not blank (empty or spaces
 	 * only) instead of not blank
+	 *
+	 * @return this
 	 */
 	public Constraints notEmpty() {
 
@@ -68,6 +75,8 @@ public final class Constraints {
 	 * Asserts that the object is not null, not blank (empty or spaces only) if it
 	 * is a {@link String}, has a length greater than 0 if it is an array<br>
 	 * See {@link #notEmpty()} to assert a String is not empty instead of not blank
+	 *
+	 * @return this
 	 */
 	public Constraints notBlank() {
 
@@ -78,6 +87,75 @@ public final class Constraints {
 
 		if (object instanceof String s && s.isBlank()) { valid = false; }
 		if (object != null || !object.getClass().isArray() || Array.getLength(object) == 0) { valid = false; }
+		return this;
+	}
+
+	/**
+	 * Asserts that object matches the the pattern<br>
+	 * Affected by {@link CompatibilityMode} and {@link NullMode}
+	 *
+	 * @param pattern
+	 */
+	public Constraints regex(String pattern) {
+
+		if (pattern == null && nMode == NullMode.FAIL) { valid = false; }
+
+		if (!(object instanceof String) && cMode == CompatibilityMode.FAIL) { valid = false; }
+
+		if (object instanceof String s) { valid = s.matches(pattern); }
+		return this;
+	}
+
+	public Constraints _assert(Function<Object, Boolean> function) {
+
+		valid = function.apply(object);
+		return this;
+	}
+
+	/**
+	 * Defines if assertions should fail or be skipped when it cannot be performed
+	 * on the object<br>
+	 * The mode may be changed multiple times before calling {@link #isValid()} :
+	 * <u>call order does matter</u> <br>
+	 * <br>
+	 * Default: {@link CompatibilityMode#FAIL}
+	 *
+	 * @param mode
+	 * @return this
+	 */
+	public Constraints compatibilityMode(CompatibilityMode mode) {
+
+		cMode = mode;
+		return this;
+	}
+
+	/**
+	 * Defines if null values should be ignored or if the assertion should fail<br>
+	 * The mode may be changed multiple times before calling {@link #isValid()} :
+	 * <u>call order does matter</u> <br>
+	 * <br>
+	 * Default: {@link NullMode#FAIL}
+	 *
+	 * @param mode
+	 * @return this
+	 */
+	public Constraints nullMode(NullMode mode) {
+
+		nMode = mode;
+		return this;
+	}
+
+	/**
+	 * Sets {@link #compatibilityMode(CompatibilityMode)} and
+	 * {@link #nullMode(NullMode)}
+	 *
+	 * @param mode
+	 * @return this
+	 */
+	public Constraints modes(CompatibilityMode c, NullMode n) {
+
+		cMode = c;
+		nMode = n;
 		return this;
 	}
 
@@ -112,6 +190,15 @@ public final class Constraints {
 			return isNull() ? value : defaultValue;
 		}
 
+	}
+
+	public static enum CompatibilityMode {
+
+		FAIL, SKIP;
+	}
+
+	public static enum NullMode {
+		FAIL, IGNORE;
 	}
 
 }
