@@ -20,7 +20,7 @@ public interface IService {
 	/**
 	 * Called when the service is enabled
 	 */
-	public void load();
+	public void load() throws Exception;
 
 	/**
 	 * Called when the service is disabled
