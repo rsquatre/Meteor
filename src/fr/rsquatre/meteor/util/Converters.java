@@ -38,8 +38,8 @@ public abstract class Converters {
 	}
 
 	@SuppressWarnings("unchecked")
-	@Nullable
-	public static <A> A pullFirst(@NotNull Class<A> type, @Nullable Object[] array) {
+
+	public static @Nullable <A> A pullFirst(@NotNull Class<A> type, @Nullable Object[] array) {
 
 		if (array != null) {
 			for (Object object : array) {
@@ -51,8 +51,8 @@ public abstract class Converters {
 	}
 
 	@SuppressWarnings("unchecked")
-	@NotNull
-	public static <A> HashSet<A> pull(@NotNull Class<A> type, @Nullable Object[] array) {
+
+	public static @NotNull <A> HashSet<A> pull(@NotNull Class<A> type, @Nullable Object[] array) {
 
 		HashSet<A> set = new HashSet<>();
 		if (array != null) { for (Object object : array) { if (type == object.getClass()) { set.add((A) object); } } }

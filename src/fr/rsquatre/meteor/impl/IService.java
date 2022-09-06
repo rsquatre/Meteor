@@ -38,16 +38,15 @@ public interface IService {
 	 *
 	 * @return the name
 	 */
-	@NotNull
-	public String getName();
+	public @NotNull String getName();
 
 	/**
 	 *
 	 * @return the service unqualified name (without the plugin part) or its
 	 *         qualified name if the latter doesn't match the required format
 	 */
-	@NotNull
-	public default String getUnqualifiedName() {
+
+	public default @NotNull String getUnqualifiedName() {
 
 		String[] s = getName().split(":");
 
@@ -59,8 +58,8 @@ public interface IService {
 	 *
 	 * @return the owner
 	 */
-	@NotNull
-	public Class<? extends JavaPlugin> getOwner();
+
+	public @NotNull Class<? extends JavaPlugin> getOwner();
 
 	/**
 	 * Attaches a listener to Meteor<br>

@@ -55,43 +55,55 @@ public final class Constraints {
 	 * Asserts that the object is not null, not empty if it is a {@link String}, has
 	 * a length greater than 0 if it is an array<br>
 	 * See {@link #notBlank()} to assert a String is not blank (empty or spaces
-	 * only) instead of not blank
+	 * only) instead of not blank <br>
+	 * <br>
+	 * Affected by {@link CompatibilityMode} and {@link NullMode}
 	 *
 	 * @return this
 	 */
 	public Constraints notEmpty() {
 
-		if (object == null) {
+		if (object == null && nMode == NullMode.IGNORE)
+			return this;
+
+		if (object == null || cMode == CompatibilityMode.FAIL && !(object instanceof String || object != null && !object.getClass().isArray())) {
 			valid = false;
 			return this;
 		}
 
 		if (object instanceof String s && s.isEmpty()) { valid = false; }
-		if (object != null || !object.getClass().isArray() || Array.getLength(object) == 0) { valid = false; }
+		if (!object.getClass().isArray() || Array.getLength(object) == 0) { valid = false; }
 		return this;
 	}
 
 	/**
 	 * Asserts that the object is not null, not blank (empty or spaces only) if it
 	 * is a {@link String}, has a length greater than 0 if it is an array<br>
-	 * See {@link #notEmpty()} to assert a String is not empty instead of not blank
+	 * See {@link #notEmpty()} to assert a String is not empty instead of not
+	 * blank<br>
+	 * <br>
+	 * Affected by {@link CompatibilityMode} and {@link NullMode}
 	 *
 	 * @return this
 	 */
 	public Constraints notBlank() {
 
-		if (object == null) {
+		if (object == null && nMode == NullMode.IGNORE)
+			return this;
+
+		if (object == null || cMode == CompatibilityMode.FAIL && !(object instanceof String || object != null && !object.getClass().isArray())) {
 			valid = false;
 			return this;
 		}
 
 		if (object instanceof String s && s.isBlank()) { valid = false; }
-		if (object != null || !object.getClass().isArray() || Array.getLength(object) == 0) { valid = false; }
+		if (!object.getClass().isArray() || Array.getLength(object) == 0) { valid = false; }
 		return this;
 	}
 
 	/**
 	 * Asserts that object matches the the pattern<br>
+	 * <br>
 	 * Affected by {@link CompatibilityMode} and {@link NullMode}
 	 *
 	 * @param pattern

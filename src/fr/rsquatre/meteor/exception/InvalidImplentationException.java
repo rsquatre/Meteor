@@ -4,12 +4,12 @@
 package fr.rsquatre.meteor.exception;
 
 /**
+ * An exception thrown when an implemented method doesn't behave as expected:
+ * invalid return type, missing data etc.
+ *
  * @author <a href="https://github.com/rsquatre">rsquatre</a>
  *
  *         © All rights reserved, unless specified otherwise
- *
- *         An exception thrown when an implemented method doesn't behave as
- *         expected: invalid return type, missing data etc.
  *
  */
 public class InvalidImplentationException extends RuntimeException {
