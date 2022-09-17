@@ -7,7 +7,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -19,7 +22,7 @@ import com.google.gson.JsonSyntaxException;
 
 import fr.rsquatre.meteor.Meteor;
 import fr.rsquatre.meteor.service.data.schema.AbstractSchema;
-import fr.rsquatre.meteor.service.data.schema.Schema;
+import fr.rsquatre.meteor.service.data.schema.EM;
 import fr.rsquatre.meteor.util.Constraints;
 import fr.rsquatre.meteor.util.Logger;
 import fr.rsquatre.meteor.util.json.Json;
@@ -38,9 +41,9 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 	private File files;
 
-	private HashMap<Class<? extends AbstractSchema>, HashSet<AbstractSchema>> create = new HashMap<>();
-	private HashMap<Class<? extends AbstractSchema>, HashSet<AbstractSchema>> persist = new HashMap<>();
-	private HashMap<Class<? extends AbstractSchema>, HashSet<AbstractSchema>> delete = new HashMap<>();
+	private HashMap<Class<? extends AbstractSchema>, ArrayList<AbstractSchema>> create = new HashMap<>();
+	private HashMap<Class<? extends AbstractSchema>, ArrayList<AbstractSchema>> persist = new HashMap<>();
+	private HashMap<Class<? extends AbstractSchema>, ArrayList<AbstractSchema>> delete = new HashMap<>();
 
 	@Override
 	public void load() throws IOException {
@@ -123,86 +126,164 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 	@Override
 	public <E extends AbstractSchema> @NotNull Collection<E> find(@NotNull Class<E> type, @NotNull int... ids) {
-		// TODO Auto-generated method stub
-		return null;
+
+		return find(type, Arrays.stream(ids).boxed().toList());
 	}
 
 	@Override
 	public <E extends AbstractSchema> @NotNull Collection<E> find(@NotNull Class<E> type, @NotNull Collection<Integer> ids) {
-		// TODO Auto-generated method stub
-		return null;
+
+		HashSet<E> entities = new HashSet<>();
+
+		File files = getDataFolder(type);
+
+		StringBuilder errors = new StringBuilder("Exptected to find " + ids.size() + " entities but an issue occurred for the following: ");
+		boolean errored = false;
+
+		for (int id : ids) {
+
+			File file = new File(files, id + ".json");
+
+			if (!file.exists()) {
+				errors.append(id + ".json (Not Found)" + (errored ? ", " : ""));
+				errored = true;
+			}
+
+			try {
+
+				entities.add(Json.get().fromJson(Files.readString(Path.of(file.getAbsolutePath())), type));
+
+			} catch (JsonSyntaxException e) {
+				e.printStackTrace();
+				errors.append(id + ".json (Json Syntax Exception)" + (errored ? ", " : ""));
+				errored = true;
+			} catch (IOException e) {
+				e.printStackTrace();
+				errors.append(id + ".json (IO Exception)" + (errored ? ", " : ""));
+				errored = true;
+			}
+
+		}
+
+		if (errored) { errors.append("Found only " + entities.size()); }
+
+		return entities;
 	}
 
 	@Override
 	public <E extends AbstractSchema> @Nullable E findOneBy(@NotNull Class<E> type, @NotNull String field, @Nullable Object value) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <E extends AbstractSchema> @Nullable E findOneBy(@NotNull Class<E> type, @NotNull String[] fields, @NotNull Object[] values) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <E extends AbstractSchema> @NotNull Collection<E> findBy(@NotNull Class<E> type, @NotNull String field, @Nullable Object value) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <E extends AbstractSchema> @NotNull Collection<E> findBy(@NotNull Class<E> type, @NotNull String field, @NotNull Object... values) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <E extends AbstractSchema> @NotNull Collection<E> findBy(@NotNull Class<E> type, @NotNull String field, @NotNull Collection<Object> values) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public <E extends AbstractSchema> @NotNull Collection<E> findBy(@NotNull Class<E> type, @NotNull String[] fields, @NotNull Object[] values) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public AbstractEntityManager persist(@NotNull AbstractSchema entity) {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (!persist.containsKey(entity.getClass())) {
+
+			persist.put(entity.getClass(), new ArrayList<>());
+		}
+
+		persist.get(entity.getClass()).add(entity);
+
+		return this;
+
 	}
 
 	@Override
 	public AbstractEntityManager persist(@NotNull AbstractSchema... entities) {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (entities == null || entities.length == 0)
+			return this;
+
+		if (!persist.containsKey(entities[0].getClass())) {
+
+			persist.put(entities[0].getClass(), new ArrayList<>());
+		}
+
+		Collections.addAll(persist.get(entities.getClass()), entities);
+
+		return this;
 	}
 
 	@Override
 	public AbstractEntityManager persist(@NotNull Collection<AbstractSchema> entities) {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (entities == null || entities.size() == 0)
+			return this;
+
+		Class<? extends AbstractSchema> type = entities.iterator().next().getClass();
+
+		if (!persist.containsKey(type)) {
+
+			persist.put(type, new ArrayList<>());
+		}
+
+		persist.get(type).addAll(entities);
+
+		return this;
 	}
 
 	@Override
 	public AbstractEntityManager remove(@NotNull AbstractSchema entity) {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (persist.containsKey(entity.getClass())) { persist.get(entity.getClass()).remove(entity); }
+
+		return this;
 	}
 
 	@Override
 	public AbstractEntityManager remove(@NotNull AbstractSchema... entities) {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (entities == null || entities.length == 0)
+			return this;
+
+		if (persist.containsKey(entities[0].getClass())) {
+
+			for (AbstractSchema entity : entities) { persist.get(entities[0].getClass()).remove(entity); }
+		}
+
+		return this;
 	}
 
 	@Override
 	public AbstractEntityManager remove(@NotNull Collection<AbstractSchema> entities) {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (entities == null || entities.size() == 0)
+			return this;
+
+		Class<? extends AbstractSchema> type = entities.iterator().next().getClass();
+
+		if (persist.containsKey(type)) {
+
+			entities.removeAll(entities);
+		}
+
+		return this;
 	}
 
 	@Override
@@ -230,15 +311,8 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 	}
 
 	@Override
-	public @NotNull AbstractEntityManager getInstance() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	public @NotNull String getSaveType() {
-		// TODO Auto-generated method stub
-		return null;
+		return "JSON, Local file system";
 	}
 
 	@Override
@@ -249,11 +323,11 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 	private File getDataFolder(Class<? extends AbstractSchema> type) {
 
-		if (type.isAnnotationPresent(Schema.class) || new Constraints(type.getAnnotation(Schema.class).name()).notBlank().isValid())
+		if (type.isAnnotationPresent(EM.Schema.class) || new Constraints(type.getAnnotation(EM.Schema.class).name()).notBlank().isValid())
 			throw new IllegalStateException(
-					"Class " + type.getName() + " is an entity but failed to declare a valid " + Schema.class.getName() + " annotation");
+					"Class " + type.getName() + " is an entity but failed to declare a valid " + EM.Schema.class.getName() + " annotation");
 
-		return new File(files, type.getAnnotation(Schema.class).name());
+		return new File(files, type.getAnnotation(EM.Schema.class).name());
 	}
 
 	private File getIndex(Class<? extends AbstractSchema> type) {

@@ -17,6 +17,8 @@ import fr.rsquatre.meteor.service.data.schema.AbstractSchema;
  *         © All rights reserved, unless specified otherwise
  *
  */
+
+// TODO add cancelDelete() methods
 public abstract class AbstractEntityManager implements IService {
 
 	public abstract @NotNull <E extends AbstractSchema> Collection<E> findAll(@NotNull Class<E> type);
@@ -58,8 +60,6 @@ public abstract class AbstractEntityManager implements IService {
 	public abstract AbstractEntityManager delete(@NotNull Collection<AbstractSchema> entities);
 
 	public abstract AbstractEntityManager flush();
-
-	public abstract @NotNull AbstractEntityManager getInstance();
 
 	public abstract @NotNull String getSaveType();
 

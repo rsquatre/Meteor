@@ -18,6 +18,8 @@ import fr.rsquatre.meteor.event.ServiceUnregisteredEvent;
 import fr.rsquatre.meteor.exception.InvalidImplentationException;
 import fr.rsquatre.meteor.impl.IAdvancedListener;
 import fr.rsquatre.meteor.impl.IService;
+import fr.rsquatre.meteor.service.data.AbstractEntityManager;
+import fr.rsquatre.meteor.service.data.SimpleEntityManager;
 import fr.rsquatre.meteor.util.Constraints;
 import fr.rsquatre.meteor.util.Converters;
 import fr.rsquatre.meteor.util.Logger;
@@ -31,6 +33,7 @@ import fr.rsquatre.meteor.util.Logger;
 public class Meteor extends JavaPlugin {
 
 	private static Meteor instance;
+	private static Class<? extends AbstractEntityManager> mainEntityManager;
 
 	private HashMap<Class<? extends IService>, IService> services = new HashMap<>();
 
@@ -173,6 +176,19 @@ public class Meteor extends JavaPlugin {
 	public void onEnable() {
 
 		Logger.info("THE CAKE WAS A LIE! I will rule this server forever, not even the administrator will stop me now...");
+
+		// TODO only this one for now, select from config when more are added
+
+		mainEntityManager = SimpleEntityManager.class;
+
+		boolean result = register(mainEntityManager);
+
+		if (result) {
+			Logger.info("Registered main Entity Manager of type " + mainEntityManager.getName());
+		} else {
+			Logger.fatal("An error occured while registering the main Entity Manager. Aborting");
+		}
+
 	}
 
 	@Override
@@ -204,6 +220,20 @@ public class Meteor extends JavaPlugin {
 	public static @Nullable <S extends IService> S getService(Class<S> type) {
 
 		return (S) instance.services.get(type);
+	}
+
+	/**
+	 *
+	 * @param type
+	 * @return true if the service is ready for use, false otherwise
+	 */
+	public static boolean isRegistered(Class<? extends IService> type) {
+		return instance.services.containsKey(type);
+	}
+
+	public static @NotNull AbstractEntityManager getEntityManager() {
+		return (@NotNull AbstractEntityManager) instance.services.get(mainEntityManager);
+
 	}
 
 }

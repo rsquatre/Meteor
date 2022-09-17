@@ -36,6 +36,8 @@ public class Logger {
 
 		logger.error("[FATAL ERROR]" + str.toString());
 
+		// TODO
+
 		// Bukkit.broadcast(Component.text("[FATAL ERROR] Please inform the
 		// administrator!"), Permissions.STAFF);
 		// Bukkit.broadcast(Component.text("[FATAL ERROR] " + str.toString()),
