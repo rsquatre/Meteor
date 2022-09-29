@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +42,10 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 	private File files;
 
+	/**
+	 * TODO check at persistence if entity needs to be created instead : avoids
+	 */
+	@Deprecated
 	private HashMap<Class<? extends AbstractSchema>, ArrayList<AbstractSchema>> create = new HashMap<>();
 	private HashMap<Class<? extends AbstractSchema>, ArrayList<AbstractSchema>> persist = new HashMap<>();
 	private HashMap<Class<? extends AbstractSchema>, ArrayList<AbstractSchema>> delete = new HashMap<>();
@@ -288,26 +293,73 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 	@Override
 	public AbstractEntityManager delete(@NotNull AbstractSchema entity) {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (!delete.containsKey(entity.getClass())) { delete.put(entity.getClass(), new ArrayList<>()); }
+
+		delete.get(entity.getClass()).add(entity);
+
+		return this;
 	}
 
 	@Override
 	public AbstractEntityManager delete(@NotNull AbstractSchema... entities) {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (entities == null || entities.length == 0)
+			return this;
+
+		for (AbstractSchema entity : entities) {
+
+			// no custom loop because we need to check every time if the ArrayList is there
+			// in case there is more than one type of entity
+			delete(entity);
+		}
+
+		return this;
 	}
 
 	@Override
 	public AbstractEntityManager delete(@NotNull Collection<AbstractSchema> entities) {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (entities == null || entities.size() == 0) {}
+
+		for (AbstractSchema entity : entities) {
+
+			// no custom loop because we need to check every time if the ArrayList is there
+			// in case there is more than one type of entity
+			delete(entity);
+		}
+
+		return this;
 	}
 
 	@Override
-	public AbstractEntityManager flush() {
-		// TODO Auto-generated method stub
-		return null;
+	synchronized public AbstractEntityManager flush() {
+
+		Bukkit.getScheduler().runTaskAsynchronously(Meteor.getInstance(), (Runnable) () -> {
+
+			// CREATE
+
+			// UPDATE
+
+			// DELETE
+
+			for (Class<? extends AbstractSchema> type : delete.keySet()) {
+
+				for (AbstractSchema entity : delete.get(type)) {
+
+					if (entity == null || entity.getId() < 1) { continue; }
+
+					File file = getEntityFile(entity);
+
+					if (!file.exists() || !file.isFile()) { Logger.warn("Cannot delete file of entity " + entity + ". File not found"); }
+
+					if (!file.delete()) { Logger.error("Cannot delete file of entity " + entity + ""); }
+				}
+			}
+
+		});
+
+		return this;
 	}
 
 	@Override
@@ -317,8 +369,10 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 	@Override
 	protected boolean isValid() {
-		// TODO Auto-generated method stub
-		return false;
+
+		// check for IO errors ?
+
+		return true;
 	}
 
 	private File getDataFolder(Class<? extends AbstractSchema> type) {
@@ -330,9 +384,25 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 		return new File(files, type.getAnnotation(EM.Schema.class).name());
 	}
 
-	private File getIndex(Class<? extends AbstractSchema> type) {
+	private File getEntityFile(AbstractSchema entity) {
+		return getEntityFile(entity.getClass(), entity.getId());
+	}
+
+	private File getEntityFile(Class<? extends AbstractSchema> type, int id) {
+		return new File(getDataFolder(type), id + ".json");
+	}
+
+	private File getIndexFile(Class<? extends AbstractSchema> type) {
 
 		return new File(getDataFolder(type), "index");
+	}
+
+	private int getIndex(AbstractSchema entity) throws NumberFormatException, IOException {
+		return getIndex(entity.getClass());
+	}
+
+	private int getIndex(Class<? extends AbstractSchema> type) throws NumberFormatException, IOException {
+		return Integer.parseInt(Files.readString(Path.of(getIndexFile(type).getPath())));
 	}
 
 }

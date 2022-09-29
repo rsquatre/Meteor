@@ -22,7 +22,7 @@ public abstract class AbstractSchema {
 
 	@Override
 	public String toString() {
-		return Json.get().toJson(this);
+		return getClass().getName() + " :  ".concat(Json.get().toJson(this));
 	}
 
 }
