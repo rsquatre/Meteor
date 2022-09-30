@@ -5,6 +5,7 @@ package fr.rsquatre.meteor.service.data;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -42,11 +43,6 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 	private File files;
 
-	/**
-	 * TODO check at persistence if entity needs to be created instead : avoids
-	 */
-	@Deprecated
-	private HashMap<Class<? extends AbstractSchema>, ArrayList<AbstractSchema>> create = new HashMap<>();
 	private HashMap<Class<? extends AbstractSchema>, ArrayList<AbstractSchema>> persist = new HashMap<>();
 	private HashMap<Class<? extends AbstractSchema>, ArrayList<AbstractSchema>> delete = new HashMap<>();
 
@@ -332,14 +328,45 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 		return this;
 	}
 
+	/**
+	 * <b><u>Asynchronously</u></b> persists and deletes entities on the next tick
+	 */
 	@Override
 	synchronized public AbstractEntityManager flush() {
 
 		Bukkit.getScheduler().runTaskAsynchronously(Meteor.getInstance(), (Runnable) () -> {
 
-			// CREATE
+			for (Class<? extends AbstractSchema> type : persist.keySet()) {
 
-			// UPDATE
+				for (AbstractSchema entity : persist.get(type)) {
+
+					if (entity == null) { continue; }
+
+					// CREATE & UPDATE
+
+					try {
+
+						File file = getEntityFile(type, entity.getId() > 0 ? entity.getId() : injectId(entity));
+
+						if (!file.exists() || !file.isFile()) { file.createNewFile(); }
+
+						PrintWriter pw = new PrintWriter(file);
+						pw.print(Json.get().toJson(entity));
+						pw.flush();
+						pw.close();
+
+					} catch (NumberFormatException e) {
+
+						e.printStackTrace();
+						Logger.fatal("The index file for entities of type " + type.getName() + " is corrupted. Expected number but found something else");
+					} catch (IOException e) {
+
+						e.printStackTrace();
+						Logger.fatal("An error occured while trying to read the index file for entities of type " + type.getName());
+					}
+
+				}
+			}
 
 			// DELETE
 
@@ -360,6 +387,7 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 		});
 
 		return this;
+
 	}
 
 	@Override
@@ -394,7 +422,25 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 	private File getIndexFile(Class<? extends AbstractSchema> type) {
 
-		return new File(getDataFolder(type), "index");
+		File file = new File(getDataFolder(type), "index");
+
+		if (!file.exists() || !file.isFile()) {
+			try {
+
+				file.createNewFile();
+				PrintWriter pw = new PrintWriter(file);
+				pw.print("1");
+				pw.flush();
+				pw.close();
+
+			} catch (IOException e) {
+
+				e.printStackTrace();
+				Logger.fatal("Cannot create index file for entity " + type.getName());
+			}
+		}
+
+		return file;
 	}
 
 	private int getIndex(AbstractSchema entity) throws NumberFormatException, IOException {
@@ -403,6 +449,29 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 	private int getIndex(Class<? extends AbstractSchema> type) throws NumberFormatException, IOException {
 		return Integer.parseInt(Files.readString(Path.of(getIndexFile(type).getPath())));
+	}
+
+	/**
+	 *
+	 * Inject the next available id into this entity and increments the index
+	 *
+	 * @param entity
+	 * @return the id that was injected into this entity
+	 * @throws NumberFormatException
+	 * @throws IOException
+	 */
+	private int injectId(AbstractSchema entity) throws NumberFormatException, IOException {
+
+		entity.setId(getIndex(entity));
+
+		File file = getIndexFile(entity.getClass());
+
+		PrintWriter pw = new PrintWriter(file);
+		pw.print(entity.getId() + 1);
+		pw.flush();
+		pw.close();
+
+		return entity.getId();
 	}
 
 }

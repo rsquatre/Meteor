@@ -15,6 +15,8 @@ public abstract class AbstractSchema {
 
 	public abstract int getId();
 
+	public abstract void setId(int id);
+
 	@Override
 	public boolean equals(Object obj) {
 		return obj != null && obj.getClass() == getClass() && ((AbstractSchema) obj).getId() == getId();
