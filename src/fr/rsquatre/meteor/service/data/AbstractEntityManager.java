@@ -45,19 +45,19 @@ public abstract class AbstractEntityManager implements IService {
 
 	public abstract AbstractEntityManager persist(@NotNull AbstractSchema... entities);
 
-	public abstract AbstractEntityManager persist(@NotNull Collection<AbstractSchema> entities);
+	public abstract AbstractEntityManager persist(@NotNull Collection<? extends AbstractSchema> entities);
 
 	public abstract AbstractEntityManager remove(@NotNull AbstractSchema entity);
 
 	public abstract AbstractEntityManager remove(@NotNull AbstractSchema... entities);
 
-	public abstract AbstractEntityManager remove(@NotNull Collection<AbstractSchema> entities);
+	public abstract AbstractEntityManager remove(@NotNull Collection<? extends AbstractSchema> entities);
 
 	public abstract AbstractEntityManager delete(@NotNull AbstractSchema entity);
 
 	public abstract AbstractEntityManager delete(@NotNull AbstractSchema... entities);
 
-	public abstract AbstractEntityManager delete(@NotNull Collection<AbstractSchema> entities);
+	public abstract AbstractEntityManager delete(@NotNull Collection<? extends AbstractSchema> entities);
 
 	public abstract AbstractEntityManager flush();
 

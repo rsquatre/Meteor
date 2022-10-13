@@ -232,7 +232,7 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 	}
 
 	@Override
-	public AbstractEntityManager persist(@NotNull Collection<AbstractSchema> entities) {
+	public AbstractEntityManager persist(@NotNull Collection<? extends AbstractSchema> entities) {
 
 		if (entities == null || entities.size() == 0)
 			return this;
@@ -272,7 +272,7 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 	}
 
 	@Override
-	public AbstractEntityManager remove(@NotNull Collection<AbstractSchema> entities) {
+	public AbstractEntityManager remove(@NotNull Collection<? extends AbstractSchema> entities) {
 
 		if (entities == null || entities.size() == 0)
 			return this;
@@ -314,7 +314,7 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 	}
 
 	@Override
-	public AbstractEntityManager delete(@NotNull Collection<AbstractSchema> entities) {
+	public AbstractEntityManager delete(@NotNull Collection<? extends AbstractSchema> entities) {
 
 		if (entities == null || entities.size() == 0) {}
 
@@ -366,6 +366,8 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 					}
 
 				}
+
+				persist.clear();
 			}
 
 			// DELETE
@@ -382,6 +384,8 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 					if (!file.delete()) { Logger.error("Cannot delete file of entity " + entity + ""); }
 				}
+
+				delete.clear();
 			}
 
 		});
@@ -405,11 +409,15 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 	private File getDataFolder(Class<? extends AbstractSchema> type) {
 
-		if (type.isAnnotationPresent(EM.Schema.class) || new Constraints(type.getAnnotation(EM.Schema.class).name()).notBlank().isValid())
+		if (!(type.isAnnotationPresent(EM.Schema.class) || new Constraints(type.getAnnotation(EM.Schema.class).name()).notBlank().isValid()))
 			throw new IllegalStateException(
 					"Class " + type.getName() + " is an entity but failed to declare a valid " + EM.Schema.class.getName() + " annotation");
 
-		return new File(files, type.getAnnotation(EM.Schema.class).name());
+		File f = new File(files, type.getAnnotation(EM.Schema.class).name());
+
+		if (!f.exists() || !f.isDirectory()) { f.mkdirs(); }
+
+		return f;
 	}
 
 	private File getEntityFile(AbstractSchema entity) {

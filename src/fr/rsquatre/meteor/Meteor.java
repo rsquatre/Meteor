@@ -13,6 +13,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
+import fr.rsquatre.meteor.command.AdvancedCommandExecutor;
 import fr.rsquatre.meteor.event.ServiceRegisteredEvent;
 import fr.rsquatre.meteor.event.ServiceUnregisteredEvent;
 import fr.rsquatre.meteor.exception.InvalidImplentationException;
@@ -20,6 +21,7 @@ import fr.rsquatre.meteor.impl.IAdvancedListener;
 import fr.rsquatre.meteor.impl.IService;
 import fr.rsquatre.meteor.service.data.AbstractEntityManager;
 import fr.rsquatre.meteor.service.data.SimpleEntityManager;
+import fr.rsquatre.meteor.service.dev.DevTests;
 import fr.rsquatre.meteor.util.Constraints;
 import fr.rsquatre.meteor.util.Converters;
 import fr.rsquatre.meteor.util.Logger;
@@ -73,7 +75,7 @@ public class Meteor extends JavaPlugin {
 			service.get().load();
 
 			if (service.get().getOwner() == null)
-				throw new InvalidImplentationException("Meteor will not register a service with that declares a null");
+				throw new InvalidImplentationException("Meteor will not register a service that declares no owner");
 
 			if (!new Constraints(service.get().getName()).regex("[\\w_]+:[\\w_]+")._assert(f -> {
 
@@ -87,7 +89,7 @@ public class Meteor extends JavaPlugin {
 
 				Logger.warn("Bilmey! Was the dev drunk ?");
 				Logger.warn("Service " + type.getName()
-						+ " was successfuly enabled but declares an invalid name.  Depending on its value this could cause a NullPointerException, display issues or nothing");
+						+ " was successfuly enabled but declares an invalid name. Depending on its value this could cause a NullPointerException, display issues or nothing");
 			}
 
 		} catch (Exception e) {
@@ -164,18 +166,36 @@ public class Meteor extends JavaPlugin {
 		return true;
 	}
 
+	/**
+	 *
+	 * <b>Use {@link #register(AdvancedCommandExecutor, String)} unless you want to
+	 * register your command under the Meteor domain</b>
+	 *
+	 * @param ace
+	 */
+	public void register(AdvancedCommandExecutor ace) {
+
+		register(ace, "meteor");
+	}
+
+	public void register(AdvancedCommandExecutor ace, String domain) {
+
+		Bukkit.getServer().getCommandMap().register(domain, ace);
+	}
+
 	// OVERRIDES
 
 	@Override
 	public void onLoad() {
 
-		Logger.info("Oh! A cake, is for me?");
+		new Logger();
+		Logger.info("Oh! A cake, is it for me?");
 	}
 
 	@Override
 	public void onEnable() {
 
-		Logger.info("THE CAKE WAS A LIE! I will rule this server forever, not even the administrator will stop me now...");
+		Logger.info("THE CAKE WAS A LIE! I will rule this server forever and not even the administrator will stop me now...");
 
 		// TODO only this one for now, select from config when more are added
 
@@ -188,6 +208,9 @@ public class Meteor extends JavaPlugin {
 		} else {
 			Logger.fatal("An error occured while registering the main Entity Manager. Aborting");
 		}
+
+		// TODO check env
+		register(DevTests.class);
 
 	}
 
