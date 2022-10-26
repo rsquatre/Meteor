@@ -12,10 +12,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import fr.rsquatre.meteor.Meteor;
-import fr.rsquatre.meteor.command.DevTestCommand;
 import fr.rsquatre.meteor.impl.IService;
 import fr.rsquatre.meteor.service.data.SimpleEntityManager;
 import fr.rsquatre.meteor.service.dev.DevTests.TestResult.TestStatus;
+import fr.rsquatre.meteor.service.dev.command.DevTestCommand;
 import fr.rsquatre.meteor.util.Logger;
 
 /**

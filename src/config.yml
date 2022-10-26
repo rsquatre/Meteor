@@ -1,0 +1,32 @@
+##############################
+##########   Core   ##########
+##############################
+#
+# Whether operators should have all Meteor permissions
+trustOperators: true
+#
+# Whether the server should shutdown when encountering a fatal error (misconfigured or unavailable entity manager...)
+#
+# WARNING: I understand that you may not want your server to shutdown in a production environment but this is a safety.
+# Meteor only throws fatal errors when it cannot operate properly, setting this to false may lead to additional errors, including data loss.
+# Set to false at your own risks.
+#
+integrityShutdown: true
+#
+##############################
+#########  Services  #########
+##############################
+#
+# The main Entity Manager
+# Possible values are:
+# - local (json based)
+# - database (MySQL or MariaDB sql database)
+#
+# WARNING: Changing this value manually in a production environment will make your data unavailable, migrate you data first!
+# { TODO insert migration command here} 
+#
+em: local
+#
+# If a service is not listed here, then it is mandatory and will always be enabled
+services:
+  dev: false

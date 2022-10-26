@@ -37,8 +37,14 @@ public abstract class Converters {
 		return classes;
 	}
 
+	/**
+	 *
+	 * @param <A>
+	 * @param type
+	 * @param array
+	 * @return the first value in this array that matches the the requested type
+	 */
 	@SuppressWarnings("unchecked")
-
 	public static @Nullable <A> A pullFirst(@NotNull Class<A> type, @Nullable Object[] array) {
 
 		if (array != null) {

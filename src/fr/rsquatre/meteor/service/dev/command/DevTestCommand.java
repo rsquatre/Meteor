@@ -1,13 +1,14 @@
 /**
  *
  */
-package fr.rsquatre.meteor.command;
+package fr.rsquatre.meteor.service.dev.command;
 
 import java.util.function.Supplier;
 
 import org.bukkit.command.CommandSender;
 
 import fr.rsquatre.meteor.Meteor;
+import fr.rsquatre.meteor.command.AdvancedCommandExecutor;
 import fr.rsquatre.meteor.impl.IService;
 import fr.rsquatre.meteor.service.dev.DevTests;
 import fr.rsquatre.meteor.service.dev.DevTests.TestResult;

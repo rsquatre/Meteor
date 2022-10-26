@@ -3,12 +3,13 @@
  */
 package fr.rsquatre.meteor;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandMap;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -19,8 +20,8 @@ import fr.rsquatre.meteor.event.ServiceUnregisteredEvent;
 import fr.rsquatre.meteor.exception.InvalidImplentationException;
 import fr.rsquatre.meteor.impl.IAdvancedListener;
 import fr.rsquatre.meteor.impl.IService;
+import fr.rsquatre.meteor.service.core.Core;
 import fr.rsquatre.meteor.service.data.AbstractEntityManager;
-import fr.rsquatre.meteor.service.data.SimpleEntityManager;
 import fr.rsquatre.meteor.service.dev.DevTests;
 import fr.rsquatre.meteor.util.Constraints;
 import fr.rsquatre.meteor.util.Converters;
@@ -35,9 +36,8 @@ import fr.rsquatre.meteor.util.Logger;
 public class Meteor extends JavaPlugin {
 
 	private static Meteor instance;
-	private static Class<? extends AbstractEntityManager> mainEntityManager;
 
-	private HashMap<Class<? extends IService>, IService> services = new HashMap<>();
+	private ConcurrentHashMap<Class<? extends IService>, IService> services = new ConcurrentHashMap<>();
 
 	public Meteor() {
 
@@ -75,21 +75,21 @@ public class Meteor extends JavaPlugin {
 			service.get().load();
 
 			if (service.get().getOwner() == null)
-				throw new InvalidImplentationException("Meteor will not register a service that declares no owner");
+				throw new InvalidImplentationException("Meteor will not register a service that declares no owner!");
 
 			if (!new Constraints(service.get().getName()).regex("[\\w_]+:[\\w_]+")._assert(f -> {
 
 				try {
-					return service.get().getName().startsWith(Converters.pullFirst(service.get().getOwner(), Bukkit.getPluginManager().getPlugins()).getName());
+					return service.get().getName().startsWith(Meteor.getInstance().getConfig().getName());
 				} catch (NullPointerException e) {
 					// the owner isn't loaded
 					return false;
 				}
 			}).isValid()) {
 
-				Logger.warn("Bilmey! Was the dev drunk ?");
-				Logger.warn("Service " + type.getName()
-						+ " was successfuly enabled but declares an invalid name. Depending on its value this could cause a NullPointerException, display issues or nothing");
+				Logger.warn("Blimey! Was the dev drunk ?");
+				Logger.warn("Service " + type.getName() + " was successfuly enabled but declares an invalid name (" + service.get().getName()
+						+ "). Depending on its value this could cause a NullPointerException, display issues or nothing");
 			}
 
 		} catch (Exception e) {
@@ -102,6 +102,8 @@ public class Meteor extends JavaPlugin {
 
 				Logger.error("#" + i + 1 + ": " + arguments[i].toString());
 			}
+
+			e.printStackTrace();
 		}
 
 		if (failed)
@@ -148,10 +150,17 @@ public class Meteor extends JavaPlugin {
 
 			failed = true;
 			Logger.error("An exception was caught while trying to unload a service of type " + service.getName());
+			e.printStackTrace();
 		}
+
+		// Disable listeners
 		HandlerList.getRegisteredListeners(instance).forEach(l -> {
 			if (l instanceof IAdvancedListener al && al.getHandler() == service.getClass()) { HandlerList.unregisterAll(al); }
 		});
+
+		// Disable commands
+		CommandMap commands = Bukkit.getServer().getCommandMap();
+		commands.getKnownCommands().forEach((name, command) -> { if (command instanceof AdvancedCommandExecutor) { command.unregister(commands); } });
 
 		services.remove(service.getClass());
 
@@ -190,6 +199,17 @@ public class Meteor extends JavaPlugin {
 
 		new Logger();
 		Logger.info("Oh! A cake, is it for me?");
+
+		if (!register(Core.class)) { Logger.fatal("An error occured while enabling Meteor's main service. Aborting"); }
+
+		Class<? extends IService> em = Core.getConfig().MAIN_ENTITY_MANAGER;
+
+		if (register(em)) {
+			Logger.info("Registered main Entity Manager of type " + em.getName());
+		} else {
+			Logger.fatal("An error occured while registering the main Entity Manager. Aborting");
+		}
+
 	}
 
 	@Override
@@ -197,20 +217,12 @@ public class Meteor extends JavaPlugin {
 
 		Logger.info("THE CAKE WAS A LIE! I will rule this server forever and not even the administrator will stop me now...");
 
-		// TODO only this one for now, select from config when more are added
+		if (Core.getConfig().SERVICES.DEV) { register(DevTests.class); }
 
-		mainEntityManager = SimpleEntityManager.class;
+		Logger.info(services.size() + " services online :");
+		for (IService service : services.values()) { Logger.info(service.getName() + " is online"); }
 
-		boolean result = register(mainEntityManager);
-
-		if (result) {
-			Logger.info("Registered main Entity Manager of type " + mainEntityManager.getName());
-		} else {
-			Logger.fatal("An error occured while registering the main Entity Manager. Aborting");
-		}
-
-		// TODO check env
-		register(DevTests.class);
+		Logger.info("Startup complete. Ready to rule the server.");
 
 	}
 
@@ -255,7 +267,7 @@ public class Meteor extends JavaPlugin {
 	}
 
 	public static @NotNull AbstractEntityManager getEntityManager() {
-		return (@NotNull AbstractEntityManager) instance.services.get(mainEntityManager);
+		return (AbstractEntityManager) instance.services.get(Core.getConfig().MAIN_ENTITY_MANAGER);
 
 	}
 

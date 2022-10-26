@@ -188,7 +188,7 @@ public final class Constraints {
 		public NotNullOrDefault(@Nullable A value, @NotNull A defaultValue) {
 
 			if (defaultValue == null)
-				throw new IllegalArgumentException("C'mon mate it's in the name \"NotNullOrDefault\"?! Parameter defaultValue cannot be null");
+				throw new IllegalArgumentException("C'mon mate it's in the name?! Parameter defaultValue cannot be null");
 
 			this.value = value;
 			this.defaultValue = defaultValue;

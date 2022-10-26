@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -334,8 +333,7 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 	@Override
 	synchronized public AbstractEntityManager flush() {
 
-		Bukkit.getScheduler().runTaskAsynchronously(Meteor.getInstance(), (Runnable) () -> {
-
+		Runnable r = () -> {
 			for (Class<? extends AbstractSchema> type : persist.keySet()) {
 
 				for (AbstractSchema entity : persist.get(type)) {
@@ -388,7 +386,13 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 				delete.clear();
 			}
 
-		});
+			Thread.currentThread().interrupt();
+		};
+
+		// Can't use BukkitRunable bc can't register task while the plugin is being
+		// disabled
+		Thread t = new Thread(r, getName());
+		t.start();
 
 		return this;
 
