@@ -16,7 +16,7 @@ import fr.rsquatre.meteor.service.data.schema.EM.Schema;
  *         © All rights reserved, unless specified otherwise
  *
  */
-@Schema(name = "test")
+@Schema(name = "tests")
 public class TestSchema extends AbstractSchema {
 
 	@Id

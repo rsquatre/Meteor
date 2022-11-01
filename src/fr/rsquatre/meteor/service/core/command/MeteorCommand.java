@@ -9,6 +9,7 @@ import fr.rsquatre.meteor.Meteor;
 import fr.rsquatre.meteor.command.AdvancedCommandExecutor;
 import fr.rsquatre.meteor.impl.IService;
 import fr.rsquatre.meteor.service.core.Core;
+import fr.rsquatre.meteor.service.permission.Permissions;
 import fr.rsquatre.meteor.util.chat.ChatUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
@@ -35,6 +36,12 @@ public class MeteorCommand extends AdvancedCommandExecutor {
 		sender.sendMessage(separator);
 
 		sender.sendMessage(Component.text("This server is running Meteor version " + Meteor.getInstance().getDescription().getVersion()));
+
+		if (sender.hasPermission(Permissions.CMD_METEOR)) {
+
+			Meteor.getServices().values().forEach(s -> sender.sendMessage(Component.text(""))); // TODO register service classes somewhere
+
+		}
 
 		sender.sendMessage(separator);
 

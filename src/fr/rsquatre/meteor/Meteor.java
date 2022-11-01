@@ -202,7 +202,7 @@ public class Meteor extends JavaPlugin {
 
 		if (!register(Core.class)) { Logger.fatal("An error occured while enabling Meteor's main service. Aborting"); }
 
-		Class<? extends IService> em = Core.getConfig().MAIN_ENTITY_MANAGER;
+		Class<? extends IService> em = Core.getConfig().SERVICES.MAIN_ENTITY_MANAGER;
 
 		if (register(em)) {
 			Logger.info("Registered main Entity Manager of type " + em.getName());
@@ -215,6 +215,7 @@ public class Meteor extends JavaPlugin {
 	@Override
 	public void onEnable() {
 
+		Logger.info("-----");
 		Logger.info("THE CAKE WAS A LIE! I will rule this server forever and not even the administrator will stop me now...");
 
 		if (Core.getConfig().SERVICES.DEV) { register(DevTests.class); }
@@ -223,15 +224,20 @@ public class Meteor extends JavaPlugin {
 		for (IService service : services.values()) { Logger.info(service.getName() + " is online"); }
 
 		Logger.info("Startup complete. Ready to rule the server.");
+		Logger.info("-----");
 
 	}
 
 	@Override
 	public void onDisable() {
 
+		Logger.info("-----");
+		Logger.info("I'm tired, boss...");
+
 		services.values().forEach(this::unregister);
 
 		Logger.info("Take care of my kingdom while I'm gone, administrator, for I will be back...");
+		Logger.info("-----");
 	}
 
 	// STATICS
@@ -258,6 +264,13 @@ public class Meteor extends JavaPlugin {
 	}
 
 	/**
+	 * @return the services
+	 */
+	public static ConcurrentHashMap<Class<? extends IService>, IService> getServices() {
+		return instance.services;
+	}
+
+	/**
 	 *
 	 * @param type
 	 * @return true if the service is ready for use, false otherwise
@@ -267,7 +280,7 @@ public class Meteor extends JavaPlugin {
 	}
 
 	public static @NotNull AbstractEntityManager getEntityManager() {
-		return (AbstractEntityManager) instance.services.get(Core.getConfig().MAIN_ENTITY_MANAGER);
+		return (AbstractEntityManager) instance.services.get(Core.getConfig().SERVICES.MAIN_ENTITY_MANAGER);
 
 	}
 

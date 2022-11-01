@@ -62,6 +62,14 @@ public interface IService {
 	public @NotNull Class<? extends JavaPlugin> getOwner();
 
 	/**
+	 *
+	 * @return true if this is a mandatory service, false otherwise<br>
+	 *         Note that calling this on an Entity Managers will always return false
+	 *         but at least one Entity Manager will always be enabled
+	 */
+	public @NotNull boolean isSystem();
+
+	/**
 	 * Attaches a listener to Meteor<br>
 	 * Your service should override this method to pass it's own {@link JavaPlugin}
 	 * or use {@link #register(IAdvancedListener, JavaPlugin)} instead

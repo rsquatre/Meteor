@@ -22,7 +22,9 @@ import org.jetbrains.annotations.Nullable;
 import com.google.gson.JsonSyntaxException;
 
 import fr.rsquatre.meteor.Meteor;
+import fr.rsquatre.meteor.service.core.Core;
 import fr.rsquatre.meteor.service.data.schema.AbstractSchema;
+import fr.rsquatre.meteor.service.data.schema.CachedSchema;
 import fr.rsquatre.meteor.service.data.schema.EM;
 import fr.rsquatre.meteor.util.Constraints;
 import fr.rsquatre.meteor.util.Logger;
@@ -72,6 +74,12 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 	}
 
 	@Override
+	public @NotNull boolean isSystem() {
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
 	public <E extends AbstractSchema> @NotNull Collection<E> findAll(@NotNull Class<E> type) {
 
 		HashSet<E> entities = new HashSet<>();
@@ -83,7 +91,26 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 		for (File file : entityFiles) {
 
 			try {
-				entities.add(Json.get().fromJson(Files.readString(Path.of(file.getAbsolutePath())), type));
+
+				if (CachedSchema.class.isAssignableFrom(type)) { // if possible
+
+					int id = Integer.parseInt(file.getName().split("\\.json")[0]);
+
+					if (Meteor.getService(Core.class).isCachedInMemory((Class<? extends CachedSchema>) type, id)) { // if available
+
+						entities.add((E) Meteor.getService(Core.class).getEntityFromMemory((Class<? extends CachedSchema>) type, id));
+
+					} else { // possible, not available
+
+						E entity = Json.get().fromJson(Files.readString(Path.of(file.getAbsolutePath())), type);
+						entities.add(entity);
+						Meteor.getService(Core.class).cacheInMemory((CachedSchema) entity);
+					}
+				} else { // not possible
+
+					entities.add(Json.get().fromJson(Files.readString(Path.of(file.getAbsolutePath())), type));
+				}
+
 			} catch (JsonSyntaxException e) {
 
 				Logger.warn("Invalid file " + file.getName() + " in the entity folder " + files.getName() + ". Is it an corrupted entity or a stowaway ?");
@@ -98,6 +125,7 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 		return entities;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <E extends AbstractSchema> @Nullable E find(@NotNull Class<E> type, @NotNull int id) {
 
@@ -108,7 +136,20 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 		if (file.exists()) {
 
 			try {
+
+				if (CachedSchema.class.isAssignableFrom(type)) { // if possible
+
+					if (Meteor.getService(Core.class).isCachedInMemory((Class<? extends CachedSchema>) type, id)) // if available
+						return (E) Meteor.getService(Core.class).getEntityFromMemory((Class<? extends CachedSchema>) type, id);
+
+					// possible, not available
+					E entity = Json.get().fromJson(Files.readString(Path.of(file.getAbsolutePath())), type);
+					Meteor.getService(Core.class).cacheInMemory((CachedSchema) entity);
+					return entity;
+				}
+
 				return Json.get().fromJson(Files.readString(Path.of(file.getAbsolutePath())), type);
+
 			} catch (JsonSyntaxException e) {
 
 				Logger.warn("Invalid file " + file.getName() + " in the entity folder " + files.getName() + ". Is it corrupred ?");
@@ -130,6 +171,7 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 		return find(type, Arrays.stream(ids).boxed().toList());
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <E extends AbstractSchema> @NotNull Collection<E> find(@NotNull Class<E> type, @NotNull Collection<Integer> ids) {
 
@@ -137,7 +179,7 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 
 		File files = getDataFolder(type);
 
-		StringBuilder errors = new StringBuilder("Exptected to find " + ids.size() + " entities but an issue occurred for the following: ");
+		StringBuilder errors = new StringBuilder("Exptected to find " + ids.size() + " entities but an issue occurred for the following: \n");
 		boolean errored = false;
 
 		for (int id : ids) {
@@ -145,27 +187,43 @@ public final class SimpleEntityManager extends AbstractEntityManager {
 			File file = new File(files, id + ".json");
 
 			if (!file.exists()) {
-				errors.append(id + ".json (Not Found)" + (errored ? ", " : ""));
+				errors.append(id + ".json (Not Found)" + (errored ? ", " : "") + "\n");
 				errored = true;
 			}
 
 			try {
 
+				if (CachedSchema.class.isAssignableFrom(type)) { // if possible
+
+					if (Meteor.getService(Core.class).isCachedInMemory((Class<? extends CachedSchema>) type, id)) { // if available
+
+						entities.add((E) Meteor.getService(Core.class).getEntityFromMemory((Class<? extends CachedSchema>) type, id));
+					} else { // possible, not available
+
+						E entity = Json.get().fromJson(Files.readString(Path.of(file.getAbsolutePath())), type);
+						Meteor.getService(Core.class).cacheInMemory((CachedSchema) entity);
+						entities.add(entity);
+					}
+				}
+
 				entities.add(Json.get().fromJson(Files.readString(Path.of(file.getAbsolutePath())), type));
 
 			} catch (JsonSyntaxException e) {
 				e.printStackTrace();
-				errors.append(id + ".json (Json Syntax Exception)" + (errored ? ", " : ""));
+				errors.append(id + ".json (Json Syntax Exception)" + (errored ? ", " : "") + "\n");
 				errored = true;
 			} catch (IOException e) {
 				e.printStackTrace();
-				errors.append(id + ".json (IO Exception)" + (errored ? ", " : ""));
+				errors.append(id + ".json (IO Exception)" + (errored ? ", " : "") + "\n");
 				errored = true;
 			}
 
 		}
 
-		if (errored) { errors.append("Found only " + entities.size()); }
+		if (errored) {
+			errors.append("Found only " + entities.size());
+			Logger.error(errors.toString());
+		}
 
 		return entities;
 	}

@@ -199,7 +199,7 @@ public final class Constraints {
 		}
 
 		public A value() {
-			return isNull() ? value : defaultValue;
+			return isNull() ? defaultValue : value;
 		}
 
 	}

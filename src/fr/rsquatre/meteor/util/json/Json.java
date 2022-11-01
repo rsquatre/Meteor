@@ -20,7 +20,9 @@ public class Json {
 	static {
 
 		Type t = new TypeToken<Location>() { private static final long serialVersionUID = 1L; }.getType();
+
 		builder.registerTypeAdapter(t, new LocationAdapter());
+		builder.registerTypeAdapterFactory(new TransientPostProcessorFactory());
 
 	}
 }

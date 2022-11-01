@@ -93,6 +93,11 @@ public class DevTests implements IService {
 		return Meteor.class;
 	}
 
+	@Override
+	public @NotNull boolean isSystem() {
+		return false;
+	}
+
 	public final class TestResult {
 
 		private TestStatus status = TestStatus.SUCCESS;

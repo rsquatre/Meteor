@@ -3,6 +3,10 @@
  */
 package fr.rsquatre.meteor.service.core;
 
+import java.io.IOException;
+import java.util.HashMap;
+
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,6 +15,7 @@ import fr.rsquatre.meteor.impl.IService;
 import fr.rsquatre.meteor.service.core.command.MeteorCommand;
 import fr.rsquatre.meteor.service.data.AbstractEntityManager;
 import fr.rsquatre.meteor.service.data.SimpleEntityManager;
+import fr.rsquatre.meteor.service.data.schema.CachedSchema;
 import fr.rsquatre.meteor.util.Constraints.NotNullOrDefault;
 import fr.rsquatre.meteor.util.Logger;
 
@@ -24,6 +29,31 @@ public class Core implements IService {
 
 	private static Configuration config;
 
+	private HashMap<Class<? extends CachedSchema>, HashMap<Integer, CachedSchema>> entityCache = new HashMap<>();
+
+	@SuppressWarnings("unchecked")
+	public <X extends CachedSchema> X getEntityFromMemory(Class<X> type, int id) {
+
+		if (entityCache.containsKey(type))
+			return (X) entityCache.get(type).get(id);
+		return null;
+	}
+
+	public boolean isCachedInMemory(Class<? extends CachedSchema> type, int id) {
+
+		if (entityCache.containsKey(type))
+			return entityCache.get(type).containsKey(id);
+
+		return false;
+	}
+
+	public void cacheInMemory(CachedSchema entity) {
+
+		if (entityCache.containsKey(entity.getClass())) { entityCache.put(entity.getClass(), new HashMap<>()); }
+
+		entityCache.get(entity.getClass()).put(entity.getId(), entity);
+	}
+
 	public static Configuration getConfig() {
 
 		if (config == null)
@@ -32,7 +62,7 @@ public class Core implements IService {
 		return config;
 	}
 
-	public void loadConfig() {
+	public void loadConfig() throws IOException {
 
 		config = new Configuration();
 		Logger.info("Done reading configuration");
@@ -43,8 +73,6 @@ public class Core implements IService {
 
 	@Override
 	public void load() throws Exception {
-
-		Meteor.getInstance().saveDefaultConfig();
 
 		loadConfig();
 
@@ -58,12 +86,17 @@ public class Core implements IService {
 
 	@Override
 	public @NotNull String getName() {
-		return "Meteor:core";
+		return "Meteor:Core";
 	}
 
 	@Override
 	public @NotNull Class<? extends JavaPlugin> getOwner() {
 		return Meteor.class;
+	}
+
+	@Override
+	public @NotNull boolean isSystem() {
+		return true;
 	}
 
 	/**
@@ -82,47 +115,36 @@ public class Core implements IService {
 		public final boolean TRUST_OPERATORS;
 		public final boolean INTEGRITY_SHUTDOWN;
 
-		public final Class<? extends AbstractEntityManager> MAIN_ENTITY_MANAGER;
-
 		public final Services SERVICES;
 
-		private Configuration() {
+		private Configuration() throws IOException {
 
-			// TODO FIXME review the whole thing cause it's bad and half broken
+			FileConfiguration fc = Meteor.getInstance().getConfig();
 
-			// Booleans
+			Meteor.getInstance().saveDefaultConfig();
 
-			Meteor.getInstance().getConfig().addDefault("truestedOperators", true);
-			Meteor.getInstance().getConfig().addDefault("integrityShutown", true);
+			TRUST_OPERATORS = fc.getBoolean("trustOperators");
+			INTEGRITY_SHUTDOWN = fc.getBoolean("integrityShutown");
 
-			TRUST_OPERATORS = Meteor.getInstance().getConfig().getBoolean("trustOperators");
-			INTEGRITY_SHUTDOWN = Meteor.getInstance().getConfig().getBoolean("integrityShutown");
+			SERVICES = new Services(fc);
 
-			// Strings
-
-			Meteor.getInstance().getConfig().addDefault("em", "local");
-
-			MAIN_ENTITY_MANAGER = switch (new NotNullOrDefault<>(Meteor.getInstance().getConfig().getString("em"), "").value().toLowerCase()) {
-			case "local" -> SimpleEntityManager.class;
-			case "sql" -> SimpleEntityManager.class; // TODO FIXME change to SQL EM when it is available
-			default -> throw new IllegalArgumentException("Unknown entity manager : " + Meteor.getInstance().getConfig().getString("em"));
-
-			};
-
-			SERVICES = new Services();
-
-			Meteor.getInstance().saveConfig();
 		}
 
 		public class Services {
 
+			public final Class<? extends AbstractEntityManager> MAIN_ENTITY_MANAGER;
 			public final boolean DEV;
 
-			private Services() {
+			private Services(FileConfiguration fc) {
 
-				Meteor.getInstance().getConfig().addDefault("services.dev", false);
+				MAIN_ENTITY_MANAGER = switch (new NotNullOrDefault<>(fc.getString("services.entityManager"), "").value().toLowerCase()) {
 
-				DEV = Meteor.getInstance().getConfig().getBoolean("services.dev");
+				case "local" -> SimpleEntityManager.class;
+				case "sql" -> SimpleEntityManager.class; // TODO FIXME change to SQL EM when it is available
+				default -> throw new IllegalArgumentException("Unknown entity manager : " + fc.getString("services.entityManager"));
+
+				};
+				DEV = fc.getBoolean("services.dev");
 			}
 
 		}
